@@ -1,0 +1,144 @@
+---
+title: "Machine Learning Assignment"
+author: "Jennifer Levy"
+date: "November 15, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+_________________________________________________________________________
+## **Download test and training data**
+_________________________________________________________________________
+
+```
+#training 
+fileURL<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+download.file(fileURL,destfile="./training.csv")
+
+#testing
+fileURL<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+download.file(fileURL,destfile="./testing.csv")
+```
+_____________________________________________________________________________
+##**Cleanup training and test datasets **
+_________________________________________________________________________
+
+Prior to building any models, the training dataset was cleaned by 1) removing all variables that had NA's present. Each of these variables were missing 97% of the observations, 2) removing all variables that did not contain variation, and 3) removing the first 6 variables because their descriptive names indicated that they would not have predictive power. This reduced the training dataset from containing 159 predictor variables to 52 predictor variables. The variables that were removed from the training dataset were also removed from the testing dataset.
+
+###Look at characteristics of the training dataset
+```
+training<-read.csv("training.csv")
+head(training)
+colnames(training) # 159 predictive variables
+length(training[,1]) # 19622 observations
+training$classe # levels A,B,C,D,E
+tail(training) # NA's exist and  #DIV/0!  
+```
+###Identify variables that have no variablilty
+```
+install.packages("caret",dependencies=TRUE)
+library(caret)
+nzv_variables<-nearZeroVar(training, saveMetrics=TRUE)
+nzv_variables # nzv column = TRUE indicates that these predictors 
+don't have any variablitiy associated with them
+```
+###Remove them from the dataset
+```
+training2 <- training[, -nearZeroVar(training)]
+colnames(training2)# 99 predictor variables remain
+head(training2)
+```
+###Check the extent of NA's
+```
+na_count <-sapply(training2, function(y) sum(length(which(is.na(y)))))
+na_count <- data.frame(na_count)
+na_count 
+na_count[11,]/length(training2[,1]) # for the variables that are missing data, 97% of the data is missing.
+na_count$name<-rownames(na_count)
+data.frame(na_count)
+colnames(na_count)
+```
+###Remove columns with NA's from the training dataset
+```
+na_count$index<-c(1:length(na_count[,1]))
+missingData<-subset(na_count,na_count==19216)
+missingData
+length(missingData$index) # 41 variables will be removed
+training3 <- training2[, -missingData$index ] # 58 predictor variables now exist
+```
+###Check start and end of training dataset to see if data looks ok
+```
+head(training3)
+tail(training3)
+
+```
+###Remove the first six variables from the dataset 
+
+```
+as they do not provide useful infomraiton for predictions
+training3<-training3[,-(1:6)]
+```
+###Identify columns removed because of no variability
+
+```
+nzv_variables$index=c(1:length(nzv_variables[,1]))
+noVar<-subset(nzv_variables,nzv_variables[,4]=="TRUE")
+```
+###Cleanup test dataset by removing all columns that were removed from the training dataset
+
+```
+testing<-read.csv("testing.csv")
+testing <- testing[, -noVar$index]
+testing <- testing[, -missingData$index ]
+testing<-testing[,-(1:6)]
+```
+_________________________________________________________________________
+##**Create validation dataset, models, and model selection**
+_________________________________________________________________________
+###Cross Validation
+Cross validation was performed using the holdout method. The training dataset was split into a training set (75% of the observations) and a validation dataset (25% of the observations). The splitting proportions were based on an example used in a class video.
+
+```
+set.seed(1388)
+inTrain<-createDataPartition(y=training3$classe,p=0.75,list=FALSE)
+Train<-training3[inTrain,]
+Validate<-training2[-inTrain,]
+```
+
+### Train possible models with the training data containing all predictors
+Two possible models were fit to the training dataset. These models included all variables using the machine learning methods of random forests and partitioning with trees. The gradient boosting algorithm was also going to be considered but it repeatedly crashed my computer so it was omitted from the analysis. Additionally, PCA was going to be considered as a preprocessing method but the accuracy of the random forest algorithm with all the predictors was excellent so PCA was not performed. Model stacking was also going to be performed but since the accuracy of the random forest algorithm was so high, stacking was unnecessary.
+
+```
+M1<-train(classe~., method="gbm", data=Train)# this model crashes R
+M2<-train(classe~., method="rf", data=Train) 
+M3<-train(classe~., method="rpart", data=Train)
+```
+###Look at decision tree  for M3 model
+```
+install.packages("rattle")
+library(rattle)
+fancyRpartPlot(M3$finalModel)
+```
+
+
+###Error estimate and model selection
+The expected out of sample error is 99%. This error rate is the prediction accuracy of the selected model on the validation data set. Because the error estimate was based on the same data that the model was selected on, the error is likely higher than the actual out of sample error. The intention was to use the testing dataset to produce the error estimate, however, the testing dataset did not contain the classe variable so it could not be used for the purposes of an error estimate.  
+
+```
+confusionMatrix(predict(M2,Validate),Validate$classe)#99.2% accuracy
+confusionMatrix(predict(M3,Validate),Validate$classe) # 49% accuracy
+```
+
+### Selected Model
+###M2<-train(classe~., method="rf", data=Train) 
+
+_________________________________________________________________________
+## **Course project prediction quiz**
+_________________________________________________________________________
+### Rredict the 20 test cases
+```
+predict(M2,testing)
+```
+ [1] B A B A A E D B A A B C B A E E A B B B
