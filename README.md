@@ -15,6 +15,31 @@ https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
 
 The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
 
+# ASSIGNMENT
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, 
+how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. 
+You will also use your prediction model to predict 20 different test cases.
+
+#Peer Review Portion
+Your submission for the Peer Review portion should consist of a link to a Github repo with your R markdown and compiled HTML file describing your analysis.
+
+The training data for this project are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+
+# Data description
+Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps 
+Curl in five different fashions: exactly according to the specification (Class A), 
+throwing the elbows to the front (Class B),
+lifting the dumbbell only halfway (Class C),
+lowering the dumbbell only halfway (Class D) 
+and throwing the hips to the front (Class E).
+
+Read more: http://groupware.les.inf.puc-rio.br/har#ixzz4PXQmzOcV
+
 #Building the Model 
 
 Prior to building any models, the training dataset was cleaned by 1) removing all variables that had NA’s present. Each of these variables were missing 97% of the observations, 2) removing all variables that did not contain variation, and 3) removing the first 6 variables because their descriptive names indicated that they would not have predictive power. This reduced the training dataset from containing 159 predictor variables to 52 predictor variables. The variables that were removed from the training dataset were also removed from the testing dataset.
